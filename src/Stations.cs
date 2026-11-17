@@ -50,23 +50,42 @@ namespace Forgekeeper
             }
         }
 
+        // what each station is doing, written to the log when it changes (so the log says why one is left alone)
+        private static readonly Dictionary<Smelter, string> State = new Dictionary<Smelter, string>();
+        private static void Say(Smelter s, string name, string state)
+        {
+            string was;
+            if (State.TryGetValue(s, out was) && was == state) return;
+            State[s] = state;
+            if (State.Count > 300) State.Clear();
+            Plugin.Debug("[forge] " + name + " at " + s.transform.position.ToString("0") + ": " + state);
+        }
+
         private static void Look(Player p, Smelter s)
         {
-            ZNetView nv = s.GetComponent<ZNetView>();
-            if (nv == null || !nv.IsValid() || !nv.IsOwner()) return;   // another player's game runs it
             if (s.GetComponent<Piece>() == null) return;                // built ones only
             string name = Utils.GetPrefabName(s.gameObject);
-            if (InList(Plugin.SkipStations.Value, name)) return;
-            List<Container> chests = Near(p, s.transform.position);
-            if (chests.Count == 0) return;
+            ZNetView nv = s.GetComponent<ZNetView>();
+            if (nv == null || !nv.IsValid()) return;
+            if (!nv.IsOwner()) { Say(s, name, "left alone: another player's game runs it now (owner " + nv.GetZDO().GetOwner() + ")"); return; }
+            if (InList(Plugin.SkipStations.Value, name)) { Say(s, name, "left alone: in SkipStations"); return; }
+            int near, others, locked;
+            List<Container> chests = Near(p, s.transform.position, out near, out others, out locked);
+            if (chests.Count == 0)
+            {
+                Say(s, name, "no chest to use within " + Plugin.ChestRange.Value.ToString("0") + " m (" + near + " chests near: " + others + " run by another player's game, " + locked + " private or warded)");
+                return;
+            }
+            Say(s, name, "looked after, with " + chests.Count + " chest(s)" + (others + locked > 0 ? " (" + others + " run by another game, " + locked + " private or warded, left out)" : ""));
             if (Plugin.Output.Value) StoreOutput(s, nv, chests, name);
             if (Plugin.Fuel.Value) AddFuel(s, nv, chests, name);
             if (Plugin.Input.Value) AddInput(s, nv, chests, name);
         }
 
         // the chests by this station your game runs and you may open, nearest first
-        private static List<Container> Near(Player p, Vector3 at)
+        private static List<Container> Near(Player p, Vector3 at, out int near, out int others, out int locked)
         {
+            near = others = locked = 0;
             float r = Plugin.ChestRange.Value;
             long me = p.GetPlayerID();
             List<Container> list = new List<Container>();
@@ -76,14 +95,26 @@ namespace Forgekeeper
                 // built chests only: never a player, a grave, a cart, a ship or an animal's saddlebags
                 if (c.m_wagon != null || c.GetComponentInParent<Ship>() != null || c.GetComponent<Piece>() == null) continue;
                 if (c.GetComponent<TombStone>() != null || c.GetComponentInParent<Character>() != null) continue;
+                near++;
                 ZNetView nv = c.GetComponent<ZNetView>();
-                if (nv == null || !nv.IsValid() || !nv.IsOwner()) continue;   // opened or run by another player's game
-                if ((AccessM != null && !(bool)AccessM.Invoke(c, new object[] { me })) || !PrivateArea.CheckAccess(c.transform.position, 0f, false, false)) continue;
+                if (nv == null || !nv.IsValid() || !nv.IsOwner()) { others++; continue; }   // opened or run by another player's game
+                if ((AccessM != null && !(bool)AccessM.Invoke(c, new object[] { me })) || !PrivateArea.CheckAccess(c.transform.position, 0f, false, false)) { locked++; continue; }
                 if (c.GetInventory() == null) continue;
                 list.Add(c);
             }
             list.Sort((a, b) => (a.transform.position - at).sqrMagnitude.CompareTo((b.transform.position - at).sqrMagnitude));
             return list;
+        }
+
+        // ------------------------------------------------------------ checking each step (user, 2026-11-17)
+
+        // Every step is checked right after it is done: the chests lost what was taken, the station got what was put
+        // in, the chests got what was stored. A step that didn't add up is written as a PROBLEM (always, even with
+        // DetailedLog off), and what the station didn't take goes back into the chests.
+        private static void Check(string name, bool ok, string what)
+        {
+            if (ok) Plugin.Debug("[forge][check] OK  " + name + ": " + what);
+            else Plugin.Log.LogWarning("[forge][check] PROBLEM  " + name + ": " + what);
         }
 
         // ------------------------------------------------------------ in
@@ -95,9 +126,13 @@ namespace Forgekeeper
             int room = Mathf.FloorToInt(s.m_maxFuel - fuel);
             if (room <= 0) return;
             string item = s.m_fuelItem.gameObject.name;
-            int got = Take(chests, item, room);
+            int got = Take(chests, item, room, name);
+            if (got <= 0) return;
             for (int i = 0; i < got; i++) nv.InvokeRPC("RPC_AddFuel", new object[0]);
-            if (got > 0) Plugin.Debug("[forge] " + name + ": " + got + " " + item + " as fuel");
+            float now = (float)FuelM.Invoke(s, null);
+            int went = Mathf.RoundToInt(now - fuel);
+            Check(name, went == got, got + " " + item + " as fuel: fuel " + fuel.ToString("0.#") + " -> " + now.ToString("0.#") + " (max " + s.m_maxFuel + ")");
+            if (went < got) GiveBack(chests, s.m_fuelItem.gameObject, got - Mathf.Max(0, went), name);
         }
 
         private static void AddInput(Smelter s, ZNetView nv, List<Container> chests, string name)
@@ -110,10 +145,14 @@ namespace Forgekeeper
                 if (c == null || c.m_from == null) continue;
                 string item = c.m_from.gameObject.name;
                 if (InList(Plugin.NeverFeed.Value, item)) continue;
-                int got = Take(chests, item, room);
+                int before = (int)QueueSizeM.Invoke(s, null);
+                int got = Take(chests, item, room, name);
+                if (got <= 0) continue;
                 for (int i = 0; i < got; i++) nv.InvokeRPC("RPC_AddOre", new object[] { item, false });
+                int after = (int)QueueSizeM.Invoke(s, null);
+                Check(name, after - before == got, got + " " + item + " put in: queue " + before + " -> " + after + " (holds " + s.m_maxOre + ")");
+                if (after - before < got) GiveBack(chests, c.m_from.gameObject, got - Mathf.Max(0, after - before), name);
                 room -= got;
-                if (got > 0) Plugin.Debug("[forge] " + name + ": " + got + " " + item + " put in");
             }
         }
 
@@ -140,12 +179,28 @@ namespace Forgekeeper
             return n;
         }
 
-        // takes up to max of an item out of the chests (nearest first), leaving KeepInChests; how many it took
-        private static int Take(List<Container> chests, string prefab, int max)
+        // what the station didn't take goes back into the chests
+        private static void GiveBack(List<Container> chests, GameObject prefab, int n, string name)
         {
+            int back = Store(chests, prefab, n, name);
+            Check(name, back == n, "gave back " + back + " of " + n + " " + prefab.name + " the station didn't take");
+        }
+
+        // takes up to max of an item out of the chests (nearest first), leaving KeepInChests; how many it took
+        private static int Take(List<Container> chests, string prefab, int max, string name)
+        {
+            int had = Count(chests, prefab);
             int keep = Keep(prefab);
-            if (keep > 0) max = Mathf.Min(max, Count(chests, prefab) - keep);
+            if (keep > 0) max = Mathf.Min(max, had - keep);
             if (max <= 0) return 0;
+            int taken = Remove(chests, prefab, max);
+            int left = Count(chests, prefab);
+            Check(name, had - left == taken, "took " + taken + " " + prefab + " from the chests: " + had + " -> " + left + (keep > 0 ? " (keeps " + keep + ")" : ""));
+            return had - left == taken ? taken : Mathf.Max(0, had - left);
+        }
+
+        private static int Remove(List<Container> chests, string prefab, int max)
+        {
             int taken = 0;
             foreach (Container c in chests)
             {
@@ -175,11 +230,12 @@ namespace Forgekeeper
                 if (amount <= 0 || ore == "" || ConversionM == null) return;
                 Smelter.ItemConversion conv = ConversionM.Invoke(s, new object[] { ore }) as Smelter.ItemConversion;
                 if (conv == null || conv.m_to == null) return;
-                int stored = Store(chests, conv.m_to.gameObject, amount);
+                int stored = Store(chests, conv.m_to.gameObject, amount, name);
                 if (stored <= 0) return;
                 if (stored >= amount) { z.Set(ZDOVars.s_spawnOre, ""); z.Set(ZDOVars.s_spawnAmount, 0); }
                 else z.Set(ZDOVars.s_spawnAmount, amount - stored);
-                Plugin.Debug("[forge] " + name + ": " + stored + " " + conv.m_to.gameObject.name + " into the chests");
+                int stays = z.GetInt(ZDOVars.s_spawnAmount, 0);
+                Check(name, stays == amount - stored, "its stack of " + amount + " " + conv.m_to.gameObject.name + ": " + stored + " into the chests, " + stays + " left in the station");
                 return;
             }
             // else it drops each piece at its output: pick those up into the chests
@@ -197,9 +253,9 @@ namespace Forgekeeper
                 GameObject prefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(item) : null;
                 int stack = d.m_itemData.m_stack;
                 if (prefab == null || stack <= 0 || !Fits(chests, prefab, stack)) continue;   // only whole pieces, so nothing is lost
-                if (Store(chests, prefab, stack) != stack) continue;
+                if (Store(chests, prefab, stack, name) != stack) continue;
                 ZNetScene.instance.Destroy(d.gameObject);
-                Plugin.Debug("[forge] " + name + ": picked up " + stack + " " + item + " into the chests");
+                Check(name, !dv.IsValid() || dv.GetZDO() == null, "picked up " + stack + " " + item + " from the ground into the chests" + (dv.IsValid() && dv.GetZDO() != null ? ", but it is still on the ground" : ""));
             }
         }
 
@@ -210,10 +266,19 @@ namespace Forgekeeper
         }
 
         // puts amount of an item into the chests: first those that already have some, then any; how many went in
-        private static int Store(List<Container> chests, GameObject prefab, int amount)
+        private static int Store(List<Container> chests, GameObject prefab, int amount, string name)
         {
             ItemDrop d = prefab.GetComponent<ItemDrop>();
             if (d == null) return 0;
+            int had = Count(chests, prefab.name);
+            int stored = Put(chests, prefab, d, amount);
+            int now = Count(chests, prefab.name);
+            Check(name, now - had == stored, "stored " + stored + " of " + amount + " " + prefab.name + " in the chests: " + had + " -> " + now);
+            return now - had == stored ? stored : Mathf.Max(0, now - had);
+        }
+
+        private static int Put(List<Container> chests, GameObject prefab, ItemDrop d, int amount)
+        {
             string shared = d.m_itemData.m_shared.m_name;
             int left = amount;
             for (int pass = 0; pass < 2 && left > 0; pass++)
