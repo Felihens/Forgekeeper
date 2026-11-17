@@ -18,7 +18,7 @@ namespace Forgekeeper
         public const string VERSION = "0.1.0";
 
         internal static ManualLogSource Log;
-        internal static ConfigEntry<bool> Enabled, Fuel, Input, Output, DetailedLog;
+        internal static ConfigEntry<bool> Enabled, Fuel, Input, Output, FuelOnly, DetailedLog;
         internal static ConfigEntry<float> ChestRange, StationRange, Interval;
         internal static ConfigEntry<string> NeverFeed, SkipStations, KeepInChests;
 
@@ -40,6 +40,8 @@ namespace Forgekeeper
                 "Wood:100 = the kiln makes coal only while the chests hold more than 100 wood. Items not listed (ores, scrap, coal) may be used up to the last one.");
             NeverFeed = Config.Bind("2 - What it does", "NeverFeed", "FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood",
                 "Items (prefab names, comma separated) never taken from the chests to be turned into something else: so the kiln doesn't burn your fine wood or core wood. Fuel is not affected.");
+            FuelOnly = Config.Bind("2 - What it does", "FuelOnlyStations", false,
+                "Also keep fueled the stations that only burn fuel and make nothing: the hot tub (wood) and the frost kiln (ice). Off by default.");
             SkipStations = Config.Bind("2 - What it does", "SkipStations", "",
                 "Stations (prefab names, comma separated) left alone, e.g. charcoal_kiln,windmill.");
             DetailedLog = Config.Bind("9 - Debug", "DetailedLog", true, "Writes details to the BepInEx log.");

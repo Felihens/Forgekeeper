@@ -69,6 +69,7 @@ namespace Forgekeeper
             if (nv == null || !nv.IsValid()) return;
             if (!nv.IsOwner()) { Say(s, name, "left alone: another player's game runs it now (owner " + nv.GetZDO().GetOwner() + ")"); return; }
             if (InList(Plugin.SkipStations.Value, name)) { Say(s, name, "left alone: in SkipStations"); return; }
+            if (!Plugin.FuelOnly.Value && (s.m_conversion == null || s.m_conversion.Count == 0)) { Say(s, name, "left alone: it only burns fuel (FuelOnlyStations is off)"); return; }
             int near, others, locked;
             List<Container> chests = Near(p, s.transform.position, out near, out others, out locked);
             if (chests.Count == 0)

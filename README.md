@@ -12,6 +12,8 @@ Every few seconds, for each built station near you:
 - **Fuel.** Coal, wood or soft tissue from the chests tops the station up.
 - **Input.** Ore, scrap, wood, sap, flax, barley and the rest fill the station's queue.
 
+The hot tub and the frost kiln only burn fuel and make nothing, so they are left alone unless you turn on **FuelOnlyStations**.
+
 ## Done safely
 
 - Items go into a station the same way as when a player puts them in, so the station really gets them.
@@ -32,6 +34,7 @@ Every few seconds, for each built station near you:
 | KeepInChests | Wood:100,Stone:100,Flax:40,Barley:40,Sap:0,Softtissue:40 | The least of an item that always stays in the chests. The station only takes what is above it, so with Wood:100 the kiln only makes coal while there is more than 100 wood. Items not listed, such as ores, scrap and coal, may be used up |
 | AddFuel / AddInput / StoreOutput | true | Each part on its own |
 | NeverFeed | FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood | Items never put in to be turned into something else |
+| FuelOnlyStations | false | Also keeps the hot tub (wood) and the frost kiln (ice) fueled. They make nothing, so they are left alone unless you turn this on |
 | SkipStations | (empty) | Stations to leave alone, for example `charcoal_kiln,windmill` |
 | DetailedLog | false | Writes every step, and why a station is left alone, to the BepInEx log |
 
@@ -50,6 +53,8 @@ A cada poucos segundos, para cada estação construída perto de você:
 - **Produto.** Lingotes, carvão, eitr, linho, farinha e afins vão para os baús em vez de se acumular ou cair no chão. O baú que já tem aquele item recebe primeiro.
 - **Combustível.** Carvão, madeira ou tecido macio dos baús completam a estação.
 - **Entrada.** Minério, sucata, madeira, seiva, linho, cevada e o resto enchem a fila da estação.
+
+A banheira e a fogueira de gelo só queimam combustível e não produzem nada, então ficam de fora, a não ser que você ligue **FuelOnlyStations**.
 
 ## Com segurança
 
