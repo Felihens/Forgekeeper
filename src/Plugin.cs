@@ -20,7 +20,7 @@ namespace Forgekeeper
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled, Fuel, Input, Output, DetailedLog;
         internal static ConfigEntry<float> ChestRange, StationRange, Interval;
-        internal static ConfigEntry<string> NeverFeed, SkipStations;
+        internal static ConfigEntry<string> NeverFeed, SkipStations, KeepInChests;
 
         private void Awake()
         {
@@ -30,11 +30,14 @@ namespace Forgekeeper
                 new ConfigDescription("Stations within this distance of you (metres) are looked after.", new AcceptableValueRange<float>(5f, 100f)));
             ChestRange = Config.Bind("1 - General", "ChestRange", 8f,
                 new ConfigDescription("How far from a station (metres) its chests may stand.", new AcceptableValueRange<float>(1f, 30f)));
-            Interval = Config.Bind("1 - General", "Interval", 2f,
+            Interval = Config.Bind("1 - General", "Interval", 5f,
                 new ConfigDescription("Seconds between two checks.", new AcceptableValueRange<float>(0.5f, 30f)));
             Fuel = Config.Bind("2 - What it does", "AddFuel", true, "Fuel (coal, wood, soft tissue...) is taken from the chests and put in.");
             Input = Config.Bind("2 - What it does", "AddInput", true, "What a station turns into something else (ore, scrap, wood, sap, flax, barley...) is taken from the chests and put in.");
-            Output = Config.Bind("2 - What it does", "StoreOutput", true, "What the station made (ingots, coal, eitr, linen, flour...) goes into the chests instead of onto the ground.");
+            Output = Config.Bind("2 - What it does", "StoreOutput", true, "What the station made (ingots, coal, eitr, linen, flour...) is collected and stored in the chests instead of piling up or lying on the ground.");
+            KeepInChests = Config.Bind("2 - What it does", "KeepInChests", "Wood:100,Stone:100,Flax:20,Barley:20,Sap:0,Softtissue:20",
+                "Least of an item (prefab name:amount, comma separated) that always stays in the chests around a station: it only takes what is above it. " +
+                "Wood:100 = the kiln makes coal only while the chests hold more than 100 wood. Items not listed (ores, scrap, coal) may be used up to the last one.");
             NeverFeed = Config.Bind("2 - What it does", "NeverFeed", "FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood",
                 "Items (prefab names, comma separated) never taken from the chests to be turned into something else: so the kiln doesn't burn your fine wood or core wood. Fuel is not affected.");
             SkipStations = Config.Bind("2 - What it does", "SkipStations", "",
@@ -46,6 +49,7 @@ namespace Forgekeeper
         private void Update()
         {
             if (!Enabled.Value) return;
+            Stations.ListOnce();
             Stations.Update();
         }
 

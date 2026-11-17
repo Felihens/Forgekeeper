@@ -73,7 +73,9 @@ namespace Forgekeeper
             foreach (Container c in Chests)
             {
                 if (c == null || (c.transform.position - at).sqrMagnitude > r * r) continue;
-                if (c.m_wagon != null || c.GetComponentInParent<Ship>() != null || c.GetComponent<Piece>() == null) continue;   // carts, ships, saddlebags
+                // built chests only: never a player, a grave, a cart, a ship or an animal's saddlebags
+                if (c.m_wagon != null || c.GetComponentInParent<Ship>() != null || c.GetComponent<Piece>() == null) continue;
+                if (c.GetComponent<TombStone>() != null || c.GetComponentInParent<Character>() != null) continue;
                 ZNetView nv = c.GetComponent<ZNetView>();
                 if (nv == null || !nv.IsValid() || !nv.IsOwner()) continue;   // opened or run by another player's game
                 if ((AccessM != null && !(bool)AccessM.Invoke(c, new object[] { me })) || !PrivateArea.CheckAccess(c.transform.position, 0f, false, false)) continue;
@@ -115,9 +117,35 @@ namespace Forgekeeper
             }
         }
 
-        // takes up to max of an item out of the chests (nearest first); how many it took
+        // the least of an item that stays in the chests (KeepInChests)
+        private static int Keep(string prefab)
+        {
+            string list = Plugin.KeepInChests.Value;
+            if (string.IsNullOrEmpty(list)) return 0;
+            foreach (string e in list.Split(','))
+            {
+                string[] kv = e.Split(':');
+                int n;
+                if (kv.Length == 2 && string.Equals(kv[0].Trim(), prefab, System.StringComparison.OrdinalIgnoreCase) && int.TryParse(kv[1].Trim(), out n)) return Mathf.Max(0, n);
+            }
+            return 0;
+        }
+
+        private static int Count(List<Container> chests, string prefab)
+        {
+            int n = 0;
+            foreach (Container c in chests)
+                foreach (ItemDrop.ItemData it in c.GetInventory().GetAllItems())
+                    if (it != null && it.m_dropPrefab != null && it.m_dropPrefab.name == prefab) n += it.m_stack;
+            return n;
+        }
+
+        // takes up to max of an item out of the chests (nearest first), leaving KeepInChests; how many it took
         private static int Take(List<Container> chests, string prefab, int max)
         {
+            int keep = Keep(prefab);
+            if (keep > 0) max = Mathf.Min(max, Count(chests, prefab) - keep);
+            if (max <= 0) return 0;
             int taken = 0;
             foreach (Container c in chests)
             {
@@ -199,6 +227,26 @@ namespace Forgekeeper
                     if (n > 0 && inv.AddItem(prefab, n)) left -= n;
                 }
             return amount - left;
+        }
+
+        // Once a game: every station the game has, what it burns and what it turns into what, so it's known what
+        // later stations take (written to the log).
+        private static bool _listed;
+        internal static void ListOnce()
+        {
+            if (_listed || ZNetScene.instance == null || Player.m_localPlayer == null) return;
+            _listed = true;
+            foreach (GameObject g in ZNetScene.instance.m_prefabs)
+            {
+                Smelter s = g != null ? g.GetComponent<Smelter>() : null;
+                if (s == null) continue;
+                List<string> conv = new List<string>();
+                if (s.m_conversion != null)
+                    foreach (Smelter.ItemConversion c in s.m_conversion)
+                        if (c != null && c.m_from != null && c.m_to != null) conv.Add(c.m_from.gameObject.name + ">" + c.m_to.gameObject.name);
+                Plugin.Log.LogInfo("[forge] station " + g.name + ": fuel " + (s.m_fuelItem != null ? s.m_fuelItem.gameObject.name + " (max " + s.m_maxFuel + ", " + s.m_fuelPerProduct + " per item)" : "none")
+                    + ", holds " + s.m_maxOre + ", " + s.m_secPerProduct + " s each, " + (s.m_spawnStack ? "keeps a stack" : "drops each") + ": " + string.Join(", ", conv.ToArray()));
+            }
         }
 
         private static bool InList(string list, string name)

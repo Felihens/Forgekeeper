@@ -27,7 +27,8 @@ Every few seconds, for each built station near you:
 | Enabled | true | Turns the mod on or off |
 | StationRange | 40 | Stations within this many metres of you are looked after |
 | ChestRange | 8 | How far from a station (in metres) its chests may stand |
-| Interval | 2 | Seconds between checks |
+| Interval | 5 | Seconds between checks |
+| KeepInChests | Wood:100,Stone:100,Flax:20,Barley:20,Sap:0,Softtissue:20 | The least of an item that always stays in the chests. The station only takes what is above it, so with Wood:100 the kiln only makes coal while there is more than 100 wood. Items not listed, such as ores, scrap and coal, may be used up |
 | AddFuel / AddInput / StoreOutput | true | Each part on its own |
 | NeverFeed | FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood | Items never put in to be turned into something else |
 | SkipStations | (empty) | Stations to leave alone, for example `charcoal_kiln,windmill` |
