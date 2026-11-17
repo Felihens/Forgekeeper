@@ -28,8 +28,8 @@ namespace Forgekeeper
             Enabled = Config.Bind("1 - General", "Enabled", true, "Stations near you feed themselves from nearby chests and put what they make into them.");
             StationRange = Config.Bind("1 - General", "StationRange", 40f,
                 new ConfigDescription("Stations within this distance of you (metres) are looked after.", new AcceptableValueRange<float>(5f, 100f)));
-            ChestRange = Config.Bind("1 - General", "ChestRange", 8f,
-                new ConfigDescription("How far from a station (metres) its chests may stand.", new AcceptableValueRange<float>(1f, 30f)));
+            ChestRange = Config.Bind("1 - General", "ChestRange", 30f,
+                new ConfigDescription("How far from a station (metres) its chests may stand.", new AcceptableValueRange<float>(1f, 50f)));
             Interval = Config.Bind("1 - General", "Interval", 5f,
                 new ConfigDescription("Seconds between two checks.", new AcceptableValueRange<float>(0.5f, 30f)));
             Fuel = Config.Bind("2 - What it does", "AddFuel", true, "Fuel (coal, wood, soft tissue...) is taken from the chests and put in.");

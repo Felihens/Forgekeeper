@@ -192,7 +192,7 @@ namespace Forgekeeper
             int had = Count(chests, prefab);
             int keep = Keep(prefab);
             if (keep > 0) max = Mathf.Min(max, had - keep);
-            if (max <= 0) return 0;
+            if (max <= 0 || had <= 0) return 0;   // none in the chests: nothing to take (and nothing to log)
             int taken = Remove(chests, prefab, max);
             int left = Count(chests, prefab);
             Check(name, had - left == taken, "took " + taken + " " + prefab + " from the chests: " + had + " -> " + left + (keep > 0 ? " (keeps " + keep + ")" : ""));
