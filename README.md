@@ -19,6 +19,7 @@ Every few seconds, for each built station near you:
 - It never uses private chests that aren't yours or chests inside someone else's ward.
 - Carts, ships and animal saddlebags are never used.
 - The kiln never burns fine wood, core wood and similar woods unless you allow it in **NeverFeed**.
+- Every step is checked right after it is done: the chests lost what was taken, the station got it, the chests got what was stored. Anything that doesn't add up is written to the BepInEx log as a PROBLEM, and what a station didn't take goes back into the chests.
 
 ## Settings (`BepInEx/config/felih.Forgekeeper.cfg`)
 
@@ -32,6 +33,7 @@ Every few seconds, for each built station near you:
 | AddFuel / AddInput / StoreOutput | true | Each part on its own |
 | NeverFeed | FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood | Items never put in to be turned into something else |
 | SkipStations | (empty) | Stations to leave alone, for example `charcoal_kiln,windmill` |
+| DetailedLog | false | Writes every step, and why a station is left alone, to the BepInEx log |
 
 ---
 
@@ -56,3 +58,4 @@ A cada poucos segundos, para cada estação construída perto de você:
 - Nunca usa baús privados de outra pessoa nem baús dentro da ward de outra pessoa.
 - Nunca usa carroças, navios nem alforjes de animais.
 - O kiln nunca queima madeira fina, madeira de núcleo e afins, a não ser que você libere em **NeverFeed**.
+- Cada passo é conferido logo depois de feito: os baús perderam o que foi tirado, a estação recebeu, os baús receberam o que foi guardado. O que não bater vai para o log do BepInEx como PROBLEM, e o que a estação não aceitou volta para os baús.

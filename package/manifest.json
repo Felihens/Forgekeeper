@@ -1,0 +1,9 @@
+{
+  "name": "Forgekeeper",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/Felihens/Forgekeeper",
+  "description": "Kilns, smelters, furnaces, refineries, spinning wheels and windmills feed themselves from nearby chests and store what they make. Keeps a minimum of wood, stone and more. Client-side, multiplayer-safe.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2351"
+  ]
+}
