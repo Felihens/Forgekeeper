@@ -23,7 +23,26 @@ The hot tub and the frost kiln only burn fuel and make nothing, so they are left
 - The kiln never burns fine wood, core wood and similar woods unless you allow it in **NeverFeed**.
 - Every step is checked right after it is done: the chests lost what was taken, the station got it, the chests got what was stored. Anything that doesn't add up is written to the BepInEx log as a PROBLEM, and what a station didn't take goes back into the chests.
 
+## Requirements
+
+- [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
+- Client-side. Other players and the server don't need it.
+
+## Installation
+
+**r2modman / Thunderstore Mod Manager:** click *Install*. To install a downloaded zip: Settings → *Import local mod*.
+
+**Manual:**
+1. Extract the zip.
+2. Copy the `plugins/Forgekeeper` folder into `Valheim/BepInEx/plugins/`.
+   Result: `Valheim/BepInEx/plugins/Forgekeeper/Forgekeeper.dll`.
+3. Launch the game.
+
+To update, delete the old `Forgekeeper` folder before copying the new one.
+
 ## Settings (`BepInEx/config/felih.Forgekeeper.cfg`)
+
+Press **F1** in game (requires Configuration Manager) or edit the file.
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -64,3 +83,24 @@ A banheira e a fogueira de gelo só queimam combustível e não produzem nada, e
 - Nunca usa carroças, navios nem alforjes de animais.
 - O kiln nunca queima madeira fina, madeira de núcleo e afins, a não ser que você libere em **NeverFeed**.
 - Cada passo é conferido logo depois de feito: os baús perderam o que foi tirado, a estação recebeu, os baús receberam o que foi guardado. O que não bater vai para o log do BepInEx como PROBLEM, e o que a estação não aceitou volta para os baús.
+
+## Requisitos
+
+- [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
+- Só no cliente. Os outros jogadores e o servidor não precisam do mod.
+
+## Instalação
+
+**r2modman / Thunderstore Mod Manager:** clique em *Install*. Para instalar um zip baixado: Settings → *Import local mod*.
+
+**Manual:**
+1. Extraia o zip.
+2. Copie a pasta `plugins/Forgekeeper` para `Valheim/BepInEx/plugins/`.
+   Resultado: `Valheim/BepInEx/plugins/Forgekeeper/Forgekeeper.dll`.
+3. Abra o jogo.
+
+Para atualizar, apague a pasta `Forgekeeper` antiga antes de copiar a nova.
+
+## Configuração
+
+Aperte **F1** no jogo (precisa do Configuration Manager) ou edite `BepInEx/config/felih.Forgekeeper.cfg`. As opções estão na tabela em inglês acima.

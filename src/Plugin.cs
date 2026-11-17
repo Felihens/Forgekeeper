@@ -44,7 +44,7 @@ namespace Forgekeeper
                 "Also keep fueled the stations that only burn fuel and make nothing: the hot tub (wood) and the frost kiln (ice). Off by default.");
             SkipStations = Config.Bind("2 - What it does", "SkipStations", "",
                 "Stations (prefab names, comma separated) left alone, e.g. charcoal_kiln,windmill.");
-            DetailedLog = Config.Bind("9 - Debug", "DetailedLog", true, "Writes details to the BepInEx log.");
+            DetailedLog = Config.Bind("9 - Debug", "DetailedLog", false, "Writes details to the BepInEx log.");
             new Harmony(GUID).PatchAll(typeof(Plugin).Assembly);
         }
 
