@@ -35,7 +35,7 @@ namespace Forgekeeper
             Fuel = Config.Bind("2 - What it does", "AddFuel", true, "Fuel (coal, wood, soft tissue...) is taken from the chests and put in.");
             Input = Config.Bind("2 - What it does", "AddInput", true, "What a station turns into something else (ore, scrap, wood, sap, flax, barley...) is taken from the chests and put in.");
             Output = Config.Bind("2 - What it does", "StoreOutput", true, "What the station made (ingots, coal, eitr, linen, flour...) is collected and stored in the chests instead of piling up or lying on the ground.");
-            KeepInChests = Config.Bind("2 - What it does", "KeepInChests", "Wood:100,Stone:100,Flax:20,Barley:20,Sap:0,Softtissue:20",
+            KeepInChests = Config.Bind("2 - What it does", "KeepInChests", "Wood:100,Stone:100,Flax:40,Barley:40,Sap:0,Softtissue:40",
                 "Least of an item (prefab name:amount, comma separated) that always stays in the chests around a station: it only takes what is above it. " +
                 "Wood:100 = the kiln makes coal only while the chests hold more than 100 wood. Items not listed (ores, scrap, coal) may be used up to the last one.");
             NeverFeed = Config.Bind("2 - What it does", "NeverFeed", "FineWood,RoundLog,ElderBark,YggdrasilWood,Blackwood",
