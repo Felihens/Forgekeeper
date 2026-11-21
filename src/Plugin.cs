@@ -15,7 +15,7 @@ namespace Forgekeeper
     {
         public const string GUID = "felih.Forgekeeper";
         public const string NAME = "Forgekeeper";
-        public const string VERSION = "0.1.0";
+        public const string VERSION = "0.1.1";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled, Fuel, Input, Output, FuelOnly, DetailedLog;

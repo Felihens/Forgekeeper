@@ -243,28 +243,37 @@ namespace Forgekeeper
             if (s.m_outputPoint == null || s.m_conversion == null) return;
             HashSet<string> made = new HashSet<string>();
             foreach (Smelter.ItemConversion c in s.m_conversion) if (c != null && c.m_to != null) made.Add(c.m_to.gameObject.name);
-            foreach (Collider col in Physics.OverlapSphere(s.m_outputPoint.position, 2f, LayerMask.GetMask("item"), QueryTriggerInteraction.Collide))
+            // the station throws each piece out of its output and it rolls (the kiln's coal most of all), so look
+            // well around the output, not only right at it (2 m missed rolled coal, 2026-11-18)
+            HashSet<ItemDrop> seen = new HashSet<ItemDrop>();
+            foreach (Collider col in Physics.OverlapSphere(s.m_outputPoint.position, PickupRadius, LayerMask.GetMask("item"), QueryTriggerInteraction.Collide))
             {
                 ItemDrop d = col != null ? col.GetComponentInParent<ItemDrop>() : null;
-                if (d == null || d.m_itemData == null) continue;
-                ZNetView dv = d.GetComponent<ZNetView>();
-                if (dv == null || !dv.IsValid() || !dv.IsOwner()) continue;
+                if (d == null || d.m_itemData == null || !seen.Add(d)) continue;
                 string item = Utils.GetPrefabName(d.gameObject);
                 if (!made.Contains(item)) continue;
+                ZNetView dv = d.GetComponent<ZNetView>();
+                if (dv == null || !dv.IsValid()) continue;
+                if (!dv.IsOwner()) { Plugin.Debug("[forge] " + name + ": " + d.m_itemData.m_stack + " " + item + " on the ground left alone, another player's game runs it"); continue; }
                 GameObject prefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(item) : null;
                 int stack = d.m_itemData.m_stack;
-                if (prefab == null || stack <= 0 || !Fits(chests, prefab, stack)) continue;   // only whole pieces, so nothing is lost
-                if (Store(chests, prefab, stack, name) != stack) continue;
-                ZNetScene.instance.Destroy(d.gameObject);
-                Check(name, !dv.IsValid() || dv.GetZDO() == null, "picked up " + stack + " " + item + " from the ground into the chests" + (dv.IsValid() && dv.GetZDO() != null ? ", but it is still on the ground" : ""));
+                if (prefab == null || stack <= 0) continue;
+                int stored = Store(chests, prefab, stack, name);   // as much as the chests take, spread over them
+                if (stored <= 0) { Say(s, name, "chests full: " + stack + " " + item + " stays on the ground"); continue; }
+                if (stored >= stack)
+                {
+                    ZNetScene.instance.Destroy(d.gameObject);
+                    Check(name, !dv.IsValid() || dv.GetZDO() == null, "picked up " + stack + " " + item + " from the ground into the chests" + (dv.IsValid() && dv.GetZDO() != null ? ", but it is still on the ground" : ""));
+                }
+                else
+                {
+                    d.SetStack(stack - stored);   // the rest stays on the ground, nothing lost or doubled
+                    Check(name, d.m_itemData.m_stack == stack - stored, "picked up " + stored + " of " + stack + " " + item + " from the ground (chests full), " + d.m_itemData.m_stack + " left there");
+                }
             }
         }
 
-        private static bool Fits(List<Container> chests, GameObject prefab, int amount)
-        {
-            foreach (Container c in chests) if (c.GetInventory().CanAddItem(prefab, amount)) return true;
-            return false;
-        }
+        private const float PickupRadius = 6f;
 
         // puts amount of an item into the chests: first those that already have some, then any; how many went in
         private static int Store(List<Container> chests, GameObject prefab, int amount, string name)
